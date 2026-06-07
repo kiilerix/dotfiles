@@ -1,0 +1,69 @@
+#!/usr/bin/python3 -s
+r"""
+Python search/replace, similar to `perl -pi -e` or ripgrep, but using plain python regexp.
+
+If invoked as `ours` or `theirs`, take that branch of conflict markers.
+
+Optional `git add` of modified files.
+
+Usage:
+pye "\n\n# Mandatory variables\ntop = '.'\nout = 'build'\n\n" "\n" gtk2_ardour/wscript
+"""
+
+import os
+import re
+import subprocess
+import sys
+
+conflict_marker_needle = rb"^<{6}[^\n]*\n((?:.*\n)*?)\|{6}[^\n]*\n((?:.*\n)*?)={6}[^\n]*\n((?:.*\n)*?)>{6}[^\n]*\n"
+
+if __name__ == "__main__":
+    command = os.path.basename(sys.argv[0])
+    args = sys.argv[1:]
+    flags = re.MULTILINE
+    add = False
+    while args[0].startswith("-"):
+        opt = args.pop(0)
+        if opt == "--":
+            break
+        if opt in ["-m", "--multiline"]:
+            flags |= re.MULTILINE
+        elif opt == ["-s", "--dotall"]:
+            flags |= re.DOTALL
+        elif opt == "--add":
+            add = True
+        elif opt == "--ours":
+            command = "ours"
+        elif opt == "--theirs":
+            command = "theirs"
+        else:
+            sys.stderr.write(f"unknown: {opt}\n")
+            sys.exit(1)
+
+    if command in ["ours", "theirs"]:
+        needle = conflict_marker_needle
+        repl = rb"\1" if command == "ours" else rb"\3"
+        flags |= re.MULTILINE
+    else:
+        needle = args.pop(0).encode()
+        repl = args.pop(0).encode()
+
+    needle_rec = re.compile(needle, flags=flags)
+    files = args
+
+    for fn in files:
+        try:
+            with open(fn, "rb") as f:
+                hay = f.read()
+            if b"\0" in hay:
+                continue
+            hay = needle_rec.sub(repl, hay)
+            with open(fn, "wb") as f:
+                f.write(hay)
+            if add:
+                if result := subprocess.check_call(["git", "add", fn]):
+                    print("Failed to git add", fn, ":", result)
+
+        except Exception as e:
+            sys.stderr.write(f"Error processing {fn}: {e!r}\n")
+            raise

@@ -1,0 +1,19 @@
+[user]
+	email = mads@kiilerich.com
+	name = Mads Kiilerich
+	useConfigOnly=true
+[color]
+	ui = auto
+[core]
+	editor = vim
+[diff]
+	guitool = meld
+	tool = meld
+[merge]
+	conflictstyle = zdiff3
+[init]
+	defaultBranch = main
+[push]
+	# default = simple
+[pull]
+	# rebase = true
