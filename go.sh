@@ -6,7 +6,7 @@ if [ ! -d $BIN ]; then
     BIN=~/bin
 fi
 [ -d $BIN ]
-for filename in pye ours theirs; do
+for filename in pye; do
     if [ ! -e $BIN/$filename ]; then
         cp $filename $BIN/$filename
     elif cmp $filename $BIN/$filename; then
@@ -15,6 +15,9 @@ for filename in pye ours theirs; do
         meld $filename $BIN/$filename
     fi
 done
+ln -sf pye $BIN/ours
+ln -sf pye $BIN/theirs
+
 for filename in .bash_profile .vimrc .gitconfig ripgreprc; do
     if [ ! -e ~/$filename ]; then
         cp $filename ~/$filename
