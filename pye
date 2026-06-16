@@ -22,14 +22,16 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     flags = re.MULTILINE
     add = False
-    while args[0].startswith("-"):
+    while args and args[0].startswith("-"):
         opt = args.pop(0)
         if opt == "--":
             break
         if opt in ["-m", "--multiline"]:
             flags |= re.MULTILINE
-        elif opt == ["-s", "--dotall"]:
+        elif opt in ["-s", "--dotall"]:
             flags |= re.DOTALL
+        elif opt in ["-i", "--ignorecase"]:
+            flags |= re.IGNORECASE
         elif opt == "--add":
             add = True
         elif opt == "--ours":
@@ -45,13 +47,19 @@ if __name__ == "__main__":
         repl = rb"\1" if command == "ours" else rb"\3"
         flags |= re.MULTILINE
     else:
+        if len(args) < 2:
+            sys.stderr.write(f"missing NEEDLE and REPL\n")
+            sys.exit(1)
         needle = args.pop(0).encode()
         repl = args.pop(0).encode()
 
     needle_rec = re.compile(needle, flags=flags)
-    files = args
 
-    for fn in files:
+    if not args:
+        sys.stderr.write(f"missing files\n")
+        sys.exit(1)
+
+    for fn in args:
         try:
             with open(fn, "rb") as f:
                 hay = f.read()
